@@ -1,0 +1,19 @@
+{
+  "name": "Grimoire — Finance",
+  "short_name": "Grimoire",
+  "description": "A local, no-paywall personal finance grimoire: expenses, income, 3-level categories, credit-card cierre + MSI, balances and charts.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbeef3",
+  "theme_color": "#f7d9e3",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%23f7d9e3'/%3E%3Ctext x='256' y='352' font-size='300' text-anchor='middle'%3E%F0%9F%94%AE%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
