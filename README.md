@@ -1,6 +1,7 @@
 # Grimoire — local finance tracker
 
-A personal, no-paywall expense & savings companion. **Phases 1 + 2** of
+A personal, no-paywall expense & savings companion. **Phases 1 + 2** plus the
+priority-weighted **raffle** and customizable priority labels of
 `PRD-expense-tracker.md`. One self-contained file, no accounts, no server, no
 tracking — your data never leaves your device.
 
@@ -97,7 +98,13 @@ then its sub-subcategories; the breadcrumb walks back out. Plus a 6-month trend.
 - **Buckets** group objectives (Travel, Home, Treats…). Add contributions with
   the **＋** on an objective to track progress; contributions are progress
   tracking only and do **not** move account balances.
-- **Priority** (1–5) orders objectives within a bucket.
+- **Priority** (1–5) orders objectives within a bucket. The five levels have
+  editable names (**Setup → Priority labels** — default *Someday · Soon · Excited
+  · Really want · Need it now*).
+- **Raffle:** the card at the top of Objectives lets the grimoire pick one
+  objective for you. Choose a scope (all buckets or one), optionally limit it to
+  goals you've fully saved for, and tap **Draw**. Higher-priority objectives are
+  weighted to come up more often (weight = level²) but nothing is guaranteed.
 
 ## Accounts
 
@@ -118,5 +125,4 @@ import fine — emoji icons are converted automatically.
 
 ## Not built yet (later phases)
 
-The priority-weighted **raffle** and its customizable 5-level priority labels;
-recurring-subscription templates; shared / multi-user access.
+Recurring-subscription templates; shared / multi-user access.

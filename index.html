@@ -221,6 +221,16 @@
   .prio i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
   .prio i.on { background: var(--accent); }
 
+  /* ---------- raffle ---------- */
+  .raffle-pick { text-align: center; padding: 20px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-2); position: relative; overflow: hidden; }
+  .raffle-pick .fig { width: 46px; height: 46px; margin: 0 auto 10px; display: grid; place-items: center; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
+  .raffle-pick .fig .ic { width: 26px; height: 26px; }
+  .rp-name { font-family: var(--serif); font-size: 20px; font-weight: 600; line-height: 1.2; }
+  .rp-bucket { font-size: 12px; color: var(--muted); margin-top: 5px; display: inline-flex; align-items: center; gap: 5px; }
+  .rp-prio { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 9px; font-size: 12px; color: var(--muted); }
+  .shimmer::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, var(--accent-soft) 50%, transparent 65%); transform: translateX(-100%); animation: shimmer 1.1s ease-out 1; pointer-events: none; }
+  @keyframes shimmer { to { transform: translateX(100%); } }
+
   .badge { display: inline-block; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
   .badge.due { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
   .badge.late { background: var(--expense); color: #fff; border-color: transparent; }
@@ -241,7 +251,7 @@
   @keyframes spark { to { transform: translate(var(--dx), -74px) rotate(var(--dr)); opacity: 0; } }
   .grow-in { animation: grow .25s ease-out; }
   @keyframes grow { from { transform: scale(.98); opacity: .5; } to { transform: scale(1); opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) { .spark { display: none; } .grow-in { animation: none; } .bar .fill { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .spark { display: none; } .grow-in { animation: none; } .bar .fill { transition: none; } .shimmer::after { display: none; } }
 
   /* ---------- page motifs (mobile-first) ---------- */
   .icon-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
@@ -303,6 +313,7 @@
    Phase 1: expenses/income, 3-level categories, credit-card cierre
             + MSI without double-counting, balances, charts.
    Phase 2: drill-down charts, savings objectives, recurrence, buckets.
+   Phase 4: priority-weighted raffle + customizable 5-level priority labels.
 
    CORE RULE — money is never counted twice:
      "Spending (by category)" = every expense at full value on its date.
@@ -412,7 +423,17 @@ function ic(key, cls) {
   return '<svg class="ic' + (cls ? " " + cls : "") + '"><use href="#i-' + iconKey(key) + '"/></svg>';
 }
 
+/* ---------- priority labels (5-level scale, user-renamable) ---------- */
+var DEFAULT_PRIORITY_LABELS = ["Someday", "Soon", "Excited", "Really want", "Need it now"];
+function priorityLabels() {
+  var pl = store.settings && store.settings.priorityLabels;
+  if (!Array.isArray(pl) || pl.length !== 5) return DEFAULT_PRIORITY_LABELS.slice();
+  return pl.map(function (s, i) { return (s && String(s).trim()) || DEFAULT_PRIORITY_LABELS[i]; });
+}
+function priorityLabel(n) { return priorityLabels()[clampInt(n, 1, 5, 3) - 1]; }
+
 /* ---------- storage ---------- */
+var BUILD = "2026-09-07";
 var KEY = "finance-app-v1";
 var store = loadStore();
 
@@ -423,7 +444,7 @@ function defaultStore() {
   var travelB = uid(), homeB = uid(), treatB = uid();
   return {
     version: 2,
-    settings: { palette: "spring", paletteAuto: false, currency: "MXN", locale: "es-MX", defaultAccountId: "" },
+    settings: { palette: "spring", paletteAuto: false, currency: "MXN", locale: "es-MX", defaultAccountId: "", priorityLabels: DEFAULT_PRIORITY_LABELS.slice() },
     accounts: [
       { id: uid(), name: "Efectivo", kind: "cash", openingBalance: 0, openingDate: "2020-01-01", icon: "wallet", archived: false },
       { id: uid(), name: "Débito", kind: "debit", openingBalance: 0, openingDate: "2020-01-01", icon: "bank", archived: false },
@@ -468,6 +489,7 @@ function loadStore() {
     });
     if (!s.settings) s.settings = defaultStore().settings;
     if (s.settings.defaultAccountId == null) s.settings.defaultAccountId = "";
+    if (!Array.isArray(s.settings.priorityLabels) || s.settings.priorityLabels.length !== 5) s.settings.priorityLabels = DEFAULT_PRIORITY_LABELS.slice();
     // migrate v1 -> v2: emoji icons to keys, card.dueMonthOffset
     s.categories.forEach(function (c) { c.icon = iconKey(c.icon); });
     s.accounts.forEach(function (a) { a.icon = iconKey(a.icon); });
@@ -701,6 +723,23 @@ function objContributedThisMonth(o) {
   return round2(store.contributions.filter(function (c) { return c.objectiveId === o.id && inMonth(c.date, thisMonthStr()); }).reduce(function (s, c) { return s + c.amount; }, 0));
 }
 function totalMonthlyReserved() { return round2(store.objectives.reduce(function (s, o) { return s + objMonthlyNeed(o); }, 0)); }
+function objFullySaved(o) { return o.kind === "goal" && (o.targetAmount || 0) > 0 && objSaved(o) >= o.targetAmount; }
+
+/* ---------- raffle (priority-weighted pick) ---------- */
+function raffleEligible(scope, readyOnly) {
+  return store.objectives.filter(function (o) {
+    if (scope && scope !== "__all" && (o.bucketId || "__none") !== scope) return false;
+    if (readyOnly && !objFullySaved(o)) return false;
+    return true;
+  });
+}
+function raffleDraw(list) {
+  var weights = list.map(function (o) { var p = clampInt(o.priority, 1, 5, 3); return p * p; });
+  var total = weights.reduce(function (s, w) { return s + w; }, 0);
+  var r = Math.random() * total;
+  for (var i = 0; i < list.length; i++) { r -= weights[i]; if (r < 0) return list[i]; }
+  return list[list.length - 1];
+}
 
 /* ---------- palette ---------- */
 function seasonForMonth(m) { if (m === 12 || m === 1 || m === 2) return "winter"; if (m >= 3 && m <= 5) return "spring"; if (m >= 6 && m <= 8) return "summer"; return "autumn"; }
@@ -711,7 +750,8 @@ function applyPalette() { document.documentElement.dataset.palette = effectivePa
 var ui = {
   tab: "log", menuOpen: false,
   logMonth: thisMonthStr(), chartMonth: thisMonthStr(), chartPath: [],
-  backfill: false, backfillLog: [], draft: null, openCard: null
+  backfill: false, backfillLog: [], draft: null, openCard: null,
+  raffleScope: "__all", raffleReadyOnly: false
 };
 function firstAccountId(kind) {
   var a = store.accounts.filter(function (x) { return !x.archived; });
@@ -995,6 +1035,22 @@ function renderObjectives() {
     '<div class="stat"><div class="k">Saved toward goals</div><div class="v">' + money(totalSaved) + '</div><div class="d muted">of ' + money(totalTarget) + "</div></div></div>" +
     '<div class="btn-row" style="margin-top:12px"><button class="chip" data-action="add-objective">' + ic("plus", "sm") + 'New objective</button><button class="chip" data-action="add-bucket">' + ic("plus", "sm") + "New bucket</button></div></div>";
 
+  var raffle = "";
+  if (store.objectives.length) {
+    var scope = ui.raffleScope || "__all";
+    var hasUnsorted = store.objectives.some(function (o) { return !o.bucketId; });
+    var scopeOpts = [{ id: "__all", name: "All buckets" }].concat(store.buckets)
+      .concat(hasUnsorted ? [{ id: "__none", name: "Unsorted" }] : []);
+    var scopeChips = scopeOpts.map(function (b) {
+      return '<button class="chip" data-action="raffle-scope" data-scope="' + b.id + '" aria-pressed="' + (scope === b.id) + '">' + esc(b.name) + "</button>";
+    }).join("");
+    raffle = '<div class="card raffle-card"><h2>' + ic("potion") + ' Raffle</h2>' +
+      '<p class="tiny muted">Let the grimoire choose one objective for you. A higher priority means a better chance of being drawn — never a certainty.</p>' +
+      '<div class="seg" style="margin-top:10px">' + scopeChips + "</div>" +
+      '<label class="toggle" style="text-transform:none;margin:2px 0 12px"><span>Only goals I’ve fully saved for</span><span class="switch"><input type="checkbox" data-action="raffle-ready"' + (ui.raffleReadyOnly ? " checked" : "") + '><span class="sl"></span></span></label>' +
+      '<button class="primary" data-action="raffle-draw">' + ic("sparkle") + "Draw</button></div>";
+  }
+
   var body = "";
   var bucketsWithNone = store.buckets.concat([{ id: "__none", name: "Unsorted", icon: "tag" }]);
   bucketsWithNone.forEach(function (bkt) {
@@ -1005,24 +1061,29 @@ function renderObjectives() {
       (bkt.id !== "__none" ? '<button class="icon-btn" data-action="edit-bucket" data-id="' + bkt.id + '">' + ic("pencil", "sm") + "</button>" : "") + "</h2>" +
       (list.length ? list.map(objRow).join("") : '<div class="empty small">No objectives in this bucket.</div>') + "</div>";
   });
-  return head + body;
+  return head + raffle + body;
+}
+function prioDots(o) {
+  return '<span class="prio" title="' + esc(priorityLabel(o.priority)) + '">' +
+    [1, 2, 3, 4, 5].map(function (n) { return '<i class="' + (n <= (o.priority || 3) ? "on" : "") + '"></i>'; }).join("") + "</span>";
 }
 function objRow(o) {
   var need = objMonthlyNeed(o);
-  var prio = '<span class="prio">' + [1, 2, 3, 4, 5].map(function (n) { return '<i class="' + (n <= (o.priority || 3) ? "on" : "") + '"></i>'; }).join("") + "</span>";
+  var prio = prioDots(o);
+  var plab = esc(priorityLabel(o.priority));
   var inner;
   if (o.kind === "goal") {
     var saved = objSaved(o), pct = o.targetAmount ? Math.min(100, saved / o.targetAmount * 100) : 0;
     var months = Math.max(1, monthsUntil(o.targetDate));
     inner = '<div class="bar" style="margin:8px 0 4px"><div class="bl"><span class="nm">' + prio + "<span>" + esc(o.name) + '</span></span><span class="bv">' + money(saved) + " / " + money(o.targetAmount || 0) + '</span></div>' +
       '<div class="track"><div class="fill" style="width:' + pct.toFixed(1) + '%"></div></div>' +
-      '<div class="tiny muted" style="margin-top:4px">' + (need > 0 ? money(need) + "/mo to reach " + dateLabel(o.targetDate) + " (" + months + " mo left)" : "target reached 🌟") + "</div></div>";
+      '<div class="tiny muted" style="margin-top:4px">' + plab + " · " + (need > 0 ? money(need) + "/mo to reach " + dateLabel(o.targetDate) + " (" + months + " mo left)" : "target reached 🌟") + "</div></div>";
   } else {
     var r = (RECUR[o.recurrence && o.recurrence.every] || RECUR.month).label;
     var got = objContributedThisMonth(o);
     inner = '<div class="bar" style="margin:8px 0 4px"><div class="bl"><span class="nm">' + prio + "<span>" + esc(o.name) + '</span></span><span class="bv">' + money(need) + "/mo</span></div>" +
       '<div class="track"><div class="fill" style="width:' + (need ? Math.min(100, got / need * 100) : 0).toFixed(1) + '%"></div></div>' +
-      '<div class="tiny muted" style="margin-top:4px">' + esc(r) + (o.times ? " ×" + o.times : "") + " · " + money(o.targetAmount || 0) + " each · " + money(got) + " set aside this month</div></div>";
+      '<div class="tiny muted" style="margin-top:4px">' + plab + " · " + esc(r) + (o.times ? " ×" + o.times : "") + " · " + money(o.targetAmount || 0) + " each · " + money(got) + " set aside this month</div></div>";
   }
   return '<div class="item">' + figog(o.icon) + '<div class="body">' + inner + "</div>" +
     '<span class="act"><button class="icon-btn" data-action="contribute" data-id="' + o.id + '">' + ic("plus", "sm") + '</button>' +
@@ -1089,10 +1150,20 @@ function renderSetup() {
         '<span class="act"><button class="icon-btn" data-action="edit-bucket" data-id="' + b.id + '">' + ic("pencil", "sm") + '</button><button class="icon-btn" data-action="del-bucket" data-id="' + b.id + '">' + ic("trash", "sm") + "</button></span></div>";
     }).join("") + "</div>" : '<div class="empty">No buckets.</div>') + "</div>";
 
+  var plabels = priorityLabels();
+  var prio = '<div class="card"><h2>' + ic("star") + ' Priority labels</h2>' +
+    '<p class="tiny muted">Name the five priority levels. They show on every objective and weight the raffle — level 5 is the most likely to be drawn.</p>' +
+    '<form id="prioForm" style="margin-top:10px">' +
+    [5, 4, 3, 2, 1].map(function (n) {
+      return '<label class="field"><span>Level ' + n + '</span><input data-p="' + n + '" value="' + esc(plabels[n - 1]) + '" maxlength="24" placeholder="' + esc(DEFAULT_PRIORITY_LABELS[n - 1]) + '"></label>';
+    }).join("") +
+    '<button class="primary" type="submit" style="margin-top:8px">' + ic("check") + "Save labels</button></form></div>";
+
   var data = '<div class="card"><h2>' + ic("book") + ' Data</h2><p class="small muted">Everything is stored only in this browser. Export regularly to back up.</p>' +
     '<div class="btn-row" style="margin-top:10px"><button class="ghost" data-action="export">Export JSON</button><button class="ghost" data-action="import">Import</button><button class="ghost" data-action="wipe">Reset all</button></div>' +
+    '<p class="tiny muted" style="margin-top:10px">Build ' + esc(BUILD) + '</p>' +
     '<input type="file" id="importFile" accept="application/json" hidden></div>';
-  return palette + cats + cards + buckets + data;
+  return palette + cats + cards + buckets + prio + data;
 }
 
 /* ============================================================ MODAL ============================================================ */
@@ -1268,7 +1339,7 @@ function renderObjectiveModal() {
     if (d.every === "permonth" || d.every === "peryear") h += '<label class="field"><span>How many times per ' + (d.every === "permonth" ? "month" : "year") + '</span><input type="number" min="1" step="1" data-o="times" value="' + esc(d.times) + '"></label>';
     if (d.every === "once") h += '<label class="field"><span>By when (optional)</span><input type="date" data-o="targetDate" value="' + esc(d.targetDate) + '"></label>';
   }
-  h += '<label class="field"><span>Priority</span><select data-o="priority">' + optionList([1, 2, 3, 4, 5].map(function (n) { return { v: String(n), t: Array(n + 1).join("●") + " " + n }; }), String(d.priority)) + "</select></label>" +
+  h += '<label class="field"><span>Priority</span><select data-o="priority">' + optionList(priorityLabels().map(function (t, i) { return { v: String(i + 1), t: (i + 1) + " · " + t }; }), String(d.priority)) + "</select></label>" +
     '<label class="field"><span>Note</span><input data-o="note" value="' + esc(d.note) + '"></label>' +
     '<label class="field"><span>Icon</span></label>' + iconGridHTML(d.icon, "icon") +
     '<button class="primary" type="submit" style="margin-top:12px">' + ic("check") + "Save</button>" +
@@ -1288,6 +1359,36 @@ function contributeModal(id) {
       return '<div class="item">' + figog("coins") + '<div class="body"><div class="t">' + money(c.amount) + '</div><div class="s">' + esc(dateLabel(c.date)) + "</div></div>" +
         '<span class="act"><button class="icon-btn" data-action="del-contribution" data-id="' + c.id + '" data-obj="' + id + '">' + ic("trash", "sm") + "</button></span></div>";
     }).join("") + "</div>" : ""));
+}
+
+function raffleResultModal(o) {
+  var bkt = o.bucketId ? bucketById(o.bucketId) : null;
+  var extra;
+  if (o.kind === "goal") {
+    var saved = objSaved(o), pct = o.targetAmount ? Math.min(100, saved / o.targetAmount * 100) : 0;
+    extra = money(saved) + " / " + money(o.targetAmount || 0) + " saved · " + pct.toFixed(0) + "%";
+  } else {
+    var r = (RECUR[o.recurrence && o.recurrence.every] || RECUR.month).label;
+    extra = r + (o.times ? " ×" + o.times : "") + " · " + money(o.targetAmount || 0) + " each";
+  }
+  openModal('<h3>' + ic("potion") + " The grimoire chooses…</h3>" +
+    '<div class="raffle-pick shimmer">' + figog(o.icon) +
+    '<div class="rp-name">' + esc(o.name) + "</div>" +
+    (bkt ? '<div class="rp-bucket">' + ic(bkt.icon, "sm") + " " + esc(bkt.name) + "</div>" : "") +
+    '<div class="rp-prio">' + prioDots(o) + " " + esc(priorityLabel(o.priority)) + "</div>" +
+    '<div class="tiny muted" style="margin-top:6px">' + esc(extra) + "</div></div>" +
+    '<div class="btn-row" style="margin-top:14px">' +
+    '<button class="primary" data-action="contribute" data-id="' + o.id + '" style="flex:1">' + ic("plus") + "Contribute</button>" +
+    '<button class="ghost" data-action="raffle-again">' + ic("potion", "sm") + "Draw again</button></div>");
+  requestAnimationFrame(function () {
+    var el = modalBody.querySelector(".raffle-pick");
+    if (el) { var b = el.getBoundingClientRect(); sparkle(b.left + b.width / 2, b.top + 12); }
+  });
+}
+function doRaffle() {
+  var list = raffleEligible(ui.raffleScope || "__all", !!ui.raffleReadyOnly);
+  if (!list.length) { alert(ui.raffleReadyOnly ? "No fully-saved goals in that scope yet." : "No objectives in that scope yet."); return; }
+  raffleResultModal(raffleDraw(list));
 }
 
 /* ============================================================ EVENTS ============================================================ */
@@ -1407,6 +1508,9 @@ document.body.addEventListener("click", function (e) {
     }
     return;
   }
+  if (a === "raffle-scope") { ui.raffleScope = t.dataset.scope; render(); return; }
+  if (a === "raffle-draw" || a === "raffle-again") { doRaffle(); return; }
+
   if (a === "contribute") { contributeModal(t.dataset.id); return; }
   if (a === "del-contribution") {
     store.contributions = store.contributions.filter(function (c) { return c.id !== t.dataset.id; });
@@ -1457,6 +1561,7 @@ document.body.addEventListener("change", function (e) {
   if (act && act === el) {
     if (act.dataset.action === "backfill") { ui.backfill = el.checked; if (!ui.backfill) ui.backfillLog = []; syncDraft(); render(); return; }
     if (act.dataset.action === "palette-auto") { store.settings.paletteAuto = el.checked; saveStore(); render(); return; }
+    if (act.dataset.action === "raffle-ready") { ui.raffleReadyOnly = el.checked; render(); return; }
   }
   if (el.closest("#quickForm") && el.dataset.draft) {
     var k = el.dataset.draft, v = el.value;
@@ -1559,6 +1664,18 @@ document.body.addEventListener("submit", function (e) {
     if (!bid) store.buckets.push(b);
     saveStore(); closeModal(); render(); return;
   }
+  if (f.id === "prioForm") {
+    var labels = priorityLabels();
+    Array.prototype.forEach.call(f.querySelectorAll("[data-p]"), function (inp) {
+      var i = clampInt(inp.dataset.p, 1, 5, 1) - 1;
+      labels[i] = inp.value.trim().slice(0, 24) || DEFAULT_PRIORITY_LABELS[i];
+    });
+    store.settings.priorityLabels = labels;
+    saveStore(); render();
+    var pb = document.querySelector("#prioForm button.primary");
+    if (pb) { var pr = pb.getBoundingClientRect(); sparkle(pr.left + pr.width / 2, pr.top); }
+    return;
+  }
   if (f.id === "objectiveForm") { submitObjective(f); return; }
   if (f.id === "contributeForm") {
     var o = objById(f.dataset.id);
@@ -1656,6 +1773,7 @@ function handleImport(file) {
         ["accounts", "cards", "categories", "transactions", "cardPayments", "adjustments", "statementOverrides", "buckets", "objectives", "contributions"].forEach(function (k) { if (!Array.isArray(store[k])) store[k] = []; });
         if (!store.settings) store.settings = defaultStore().settings;
         if (store.settings.defaultAccountId == null) store.settings.defaultAccountId = "";
+        if (!Array.isArray(store.settings.priorityLabels) || store.settings.priorityLabels.length !== 5) store.settings.priorityLabels = DEFAULT_PRIORITY_LABELS.slice();
         store.categories.forEach(function (c) { c.icon = iconKey(c.icon); });
         store.accounts.forEach(function (a) { a.icon = iconKey(a.icon); });
         store.cards.forEach(function (c) { c.icon = iconKey(c.icon); if (c.dueMonthOffset == null) c.dueMonthOffset = 1; });
@@ -1686,7 +1804,31 @@ function sparkle(x, y) {
 buildSprite();
 render();
 if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
-  navigator.serviceWorker.register("service-worker.js").catch(function () {});
+  // Reload once when a NEW service worker takes control (new build landed).
+  // Guard on an existing controller so the first-ever install doesn't reload.
+  if (navigator.serviceWorker.controller) {
+    var swReloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (swReloaded) return;
+      swReloaded = true;
+      location.reload();
+    });
+  }
+  navigator.serviceWorker.register("service-worker.js").then(function (reg) {
+    reg.addEventListener("updatefound", function () {
+      var nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener("statechange", function () {
+        // If a controller already exists, this is an update — activate it now.
+        if (nw.state === "installed" && navigator.serviceWorker.controller) nw.postMessage("skip-waiting");
+      });
+    });
+    // Check for a newer build on launch and every time the app is refocused.
+    reg.update();
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) reg.update();
+    });
+  }).catch(function () {});
 }
 </script>
 </body>
