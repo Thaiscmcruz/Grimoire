@@ -26,8 +26,12 @@ don't get the installable/offline service worker.
 ## Navigation
 
 Tap the **☰ button, top-left** to slide out the page menu. Tap a page, the dimmed
-area, the button again, or press Esc to close it. Pages: **Log, Cards, Charts,
+area, the button again, or press Esc to close it. Pages: **Log, Credits, Charts,
 Objectives, Accounts, Setup**.
+
+The **Log** page is styled like a log book and the **Credits** page like a rolled
+credit sheet (its menu icon is a little scroll — a nod to credit sheets being the
+first form of borrowed money on paper). Everything is designed mobile-first.
 
 ## The one rule: money is never counted twice
 
@@ -45,7 +49,7 @@ again as spending. Balances reconcile off "Cash out" only.
 - Each card has a **cierre (cutover) day**, a **due day**, and a **due month**:
   *same month / month after / two months after* the cierre. Default is *month
   after* (cierre Aug 15 → due Sep 5).
-- The Cards page separates **"Statement to pay"** (a closed statement still
+- The Credits page separates **"Statement to pay"** (a closed statement still
   owing, shown with its due date and an overdue flag) from **"Current period"**
   (charges still accumulating toward the next cierre). Looking at the wrong one
   is what makes a due date look "a month off".
@@ -57,6 +61,25 @@ again as spending. Balances reconcile off "Cash out" only.
   the purchase date; each following statement shows one installment as the real
   cash outflow. $12,000 × 6 bought Aug 3 → whole $12,000 in August's category
   chart; $2,000 in each of the next 6 statements.
+
+## Logging
+
+- On the **Log** page an entry is either an **Expense** (down arrow) or **Income**
+  (up arrow). Expenses are filed under **Type → Use → Detail** (the three category
+  levels); the last two are optional.
+- The **Debit** payment option is marked with a paper-check glyph.
+- **Recurring income:** an income entry can repeat **weekly / fortnightly /
+  monthly / yearly**. The Log page then shows a **Recurring income** panel with
+  the next expected date for each series. That date is computed from the previous
+  occurrence, and if it falls on a Saturday or Sunday it rolls **back** to the
+  preceding weekday (Friday). Tapping ✓ records that payment and advances the
+  series — nothing is posted automatically.
+
+## Default account
+
+On the **Accounts** page, the star on a row marks that account as the default. It
+is then pre-selected in every **"From account"** field — new cash/debit expenses
+and card payments alike. Tap the star again to clear it.
 
 ## Charts
 

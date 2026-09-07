@@ -1,6 +1,6 @@
 /* Grimoire offline shell cache.
    Bump CACHE when index.html changes so clients pick up the new version. */
-var CACHE = "grimoire-v2";
+var CACHE = "grimoire-v3";
 var ASSETS = ["./", "./index.html", "./manifest.webmanifest"];
 
 self.addEventListener("install", function (e) {

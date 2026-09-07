@@ -242,6 +242,23 @@
   .grow-in { animation: grow .25s ease-out; }
   @keyframes grow { from { transform: scale(.98); opacity: .5; } to { transform: scale(1); opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { .spark { display: none; } .grow-in { animation: none; } .bar .fill { transition: none; } }
+
+  /* ---------- page motifs (mobile-first) ---------- */
+  .icon-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
+  /* Log — a mini log book: flat spine on the left, rounded pages on the right */
+  main[data-page="log"] > .card {
+    border-left: 3px solid var(--accent);
+    border-radius: 4px var(--radius) var(--radius) 4px;
+    box-shadow: 0 6px 20px -12px var(--glow), -2px 0 0 var(--accent-soft), 0 1px 2px rgba(0,0,0,.03);
+  }
+  /* Credits — a rolled credit sheet: soft curl shading top and bottom */
+  main[data-page="cards"] > .card {
+    border-radius: 5px;
+    background:
+      radial-gradient(100% 9px at 50% 0, rgba(60,35,50,.09), transparent) top center / 100% 12px no-repeat,
+      radial-gradient(100% 9px at 50% 100%, rgba(60,35,50,.09), transparent) bottom center / 100% 12px no-repeat,
+      var(--panel);
+  }
 </style>
 </head>
 <body>
@@ -259,7 +276,7 @@
 <nav class="drawer" id="drawer" aria-label="Pages">
   <div class="brand"><span class="mark"><svg class="ic lg"><use href="#i-potion"/></svg></span><b>Grimoire</b></div>
   <button class="nav-item" data-action="nav" data-page="log"><svg class="ic nav"><use href="#i-feather"/></svg> Log</button>
-  <button class="nav-item" data-action="nav" data-page="cards"><svg class="ic nav"><use href="#i-card"/></svg> Cards</button>
+  <button class="nav-item" data-action="nav" data-page="cards"><svg class="ic nav"><use href="#i-scroll"/></svg> Credits</button>
   <button class="nav-item" data-action="nav" data-page="charts"><svg class="ic nav"><use href="#i-moon"/></svg> Charts</button>
   <button class="nav-item" data-action="nav" data-page="objectives"><svg class="ic nav"><use href="#i-target"/></svg> Objectives</button>
   <button class="nav-item" data-action="nav" data-page="accounts"><svg class="ic nav"><use href="#i-jar"/></svg> Accounts</button>
@@ -369,10 +386,14 @@ var ICON_PATHS = {
   game: '<rect x="3" y="8" width="18" height="9" rx="4"/><path d="M8 11v3M6.5 12.5h3M15.5 12l.01.01M17.5 14l.01.01"/>',
   ticket: '<path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M12 7v10"/>',
   hourglass: '<path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 0M7 21c0-5 10-5 10 0"/>',
-  scales: '<path d="M12 4v16M7 20h10M5 8h14M5 8l-2 5a3 3 0 0 0 6 0zM19 8l-2 5a3 3 0 0 0 6 0z"/>'
+  scales: '<path d="M12 4v16M7 20h10M5 8h14M5 8l-2 5a3 3 0 0 0 6 0zM19 8l-2 5a3 3 0 0 0 6 0z"/>',
+  scroll: '<path d="M7 4h10v13a3 3 0 0 0 3 3H9a3 3 0 0 1-3-3V6"/><path d="M7 4a2 2 0 0 0-2 2c0 1.1.9 2 2 2h1"/><path d="M17 17h3a2 2 0 0 1-2 3"/><path d="M9 9h6M9 12h5"/>',
+  cheque: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M6 10h6M6 13h4"/><path d="M13 14l2.2 2.2L19 12"/>',
+  arrowUp: '<path d="M12 20V5"/><path d="M6 11l6-6 6 6"/>',
+  arrowDown: '<path d="M12 4v15"/><path d="M6 13l6 6 6-6"/>'
 };
 var ICON_KEYS = Object.keys(ICON_PATHS);
-var PICKER_ICONS = ["leaf","flower","seedling","mushroom","acorn","star","moon","sun","cloud","snow","sparkle","potion","candle","teapot","coffee","wine","cake","bread","basket","plate","car","fuel","scooter","plane","house","key","bulb","tv","music","game","heart","gift","cat","butterfly","wave","mountain","fire","gem","dress","bottle","pill","wallet","bank","piggy","coins","cash","suitcase","tag","ticket","book","calendar","hourglass"];
+var PICKER_ICONS = ["leaf","flower","seedling","mushroom","acorn","star","moon","sun","cloud","snow","sparkle","potion","candle","teapot","coffee","wine","cake","bread","basket","plate","car","fuel","scooter","plane","house","key","bulb","tv","music","game","heart","gift","cat","butterfly","wave","mountain","fire","gem","dress","bottle","pill","wallet","bank","piggy","coins","cash","scroll","cheque","suitcase","tag","ticket","book","calendar","hourglass"];
 
 var EMOJI_TO_KEY = {
   "🍞":"bread","🧺":"basket","🍽️":"plate","🍽":"plate","🚗":"car","⛽":"fuel","🛺":"scooter","🏠":"house","🗝️":"key","💡":"bulb",
@@ -402,7 +423,7 @@ function defaultStore() {
   var travelB = uid(), homeB = uid(), treatB = uid();
   return {
     version: 2,
-    settings: { palette: "spring", paletteAuto: false, currency: "MXN", locale: "es-MX" },
+    settings: { palette: "spring", paletteAuto: false, currency: "MXN", locale: "es-MX", defaultAccountId: "" },
     accounts: [
       { id: uid(), name: "Efectivo", kind: "cash", openingBalance: 0, openingDate: "2020-01-01", icon: "wallet", archived: false },
       { id: uid(), name: "Débito", kind: "debit", openingBalance: 0, openingDate: "2020-01-01", icon: "bank", archived: false },
@@ -446,6 +467,7 @@ function loadStore() {
       if (!Array.isArray(s[k])) s[k] = [];
     });
     if (!s.settings) s.settings = defaultStore().settings;
+    if (s.settings.defaultAccountId == null) s.settings.defaultAccountId = "";
     // migrate v1 -> v2: emoji icons to keys, card.dueMonthOffset
     s.categories.forEach(function (c) { c.icon = iconKey(c.icon); });
     s.accounts.forEach(function (a) { a.icon = iconKey(a.icon); });
@@ -483,6 +505,31 @@ function monthsUntil(dateStr) {
   var m = (b.y - a.y) * 12 + (b.m - a.m);
   if (b.d < a.d) m -= 0; // partial month counts as remaining
   return m;
+}
+
+/* ---------- recurring income ---------- */
+var INCOME_RECUR = { week: "Weekly", fortnight: "Fortnightly", month: "Monthly", year: "Yearly" };
+function prevWeekday(dt) {
+  var g = dt.getDay();
+  if (g === 6) dt.setDate(dt.getDate() - 1);      // Saturday -> Friday
+  else if (g === 0) dt.setDate(dt.getDate() - 2); // Sunday -> Friday
+  return dt;
+}
+// upcoming occurrence from the last one; if it lands on a weekend, roll back to the previous weekday
+function nextRecurDate(dateStr, every) {
+  var p = parseYMD(dateStr), dt = new Date(p.y, p.m - 1, p.d);
+  if (every === "week") dt.setDate(dt.getDate() + 7);
+  else if (every === "fortnight") dt.setDate(dt.getDate() + 14);
+  else if (every === "month") dt.setMonth(dt.getMonth() + 1);
+  else if (every === "year") dt.setFullYear(dt.getFullYear() + 1);
+  else return dateStr;
+  prevWeekday(dt);
+  return ymd(dt.getFullYear(), dt.getMonth() + 1, dt.getDate());
+}
+function dowDateLabel(s) {
+  if (!s) return "—";
+  var p = parseYMD(s);
+  return new Date(p.y, p.m - 1, p.d).toLocaleDateString(store.settings.locale, { weekday: "short", day: "numeric", month: "short" });
 }
 
 /* ---------- money ---------- */
@@ -668,6 +715,8 @@ var ui = {
 };
 function firstAccountId(kind) {
   var a = store.accounts.filter(function (x) { return !x.archived; });
+  var def = a.find(function (x) { return x.id === store.settings.defaultAccountId; });
+  if (def && (kind === "savings" ? def.kind === "savings" : def.kind !== "savings")) return def.id;
   var pref = a.find(function (x) { return x.kind === kind; });
   return (pref || a[0] || {}).id || "";
 }
@@ -677,7 +726,7 @@ function freshDraft() {
     date: (ui.backfill && ui.draft) ? ui.draft.date : todayStr(),
     l0: "", l1: "", l2: "",
     method: "cash", accountId: firstAccountId("cash"), cardId: store.cards[0] ? store.cards[0].id : "",
-    msiOn: false, msiN: 6, source: ""
+    msiOn: false, msiN: 6, source: "", incomeEvery: ""
   };
 }
 ui.draft = freshDraft();
@@ -708,6 +757,7 @@ function render() {
     b.setAttribute("aria-current", b.dataset.page === ui.tab ? "true" : "false");
   });
   var fn = { log: renderLog, cards: renderCards, charts: renderCharts, objectives: renderObjectives, accounts: renderAccounts, setup: renderSetup }[ui.tab] || renderLog;
+  view.dataset.page = ui.tab;
   view.innerHTML = fn();
   view.classList.remove("grow-in"); void view.offsetWidth; view.classList.add("grow-in");
 }
@@ -722,26 +772,29 @@ function figog(key) { return '<span class="fig">' + ic(key) + "</span>"; }
 function categoryPickerHTML(d) {
   var tops = catChildren(null), l1s = d.l0 ? catChildren(d.l0) : [], l2s = d.l1 ? catChildren(d.l1) : [];
   function opts(list) { return list.map(function (c) { return { v: c.id, t: c.name }; }).concat([{ v: "__new", t: "＋ New…" }]); }
-  var h = '<label class="field"><span>Category</span><select data-draft="l0">' + optionList(opts(tops), d.l0, "Choose…") + "</select></label>";
-  if (d.l0 && d.l0 !== "__new") h += '<label class="field"><span>Subcategory (optional)</span><select data-draft="l1">' + optionList(opts(l1s), d.l1, "—") + "</select></label>";
-  if (d.l1 && d.l1 !== "__new") h += '<label class="field"><span>Sub-subcategory (optional)</span><select data-draft="l2">' + optionList(opts(l2s), d.l2, "—") + "</select></label>";
+  var h = '<label class="field"><span>Type</span><select data-draft="l0">' + optionList(opts(tops), d.l0, "Choose…") + "</select></label>";
+  if (d.l0 && d.l0 !== "__new") h += '<label class="field"><span>Use (optional)</span><select data-draft="l1">' + optionList(opts(l1s), d.l1, "—") + "</select></label>";
+  if (d.l1 && d.l1 !== "__new") h += '<label class="field"><span>Detail (optional)</span><select data-draft="l2">' + optionList(opts(l2s), d.l2, "—") + "</select></label>";
   return h;
 }
 function paymentFieldsHTML(d) {
   if (d.kind === "income") {
     var accs = store.accounts.filter(function (a) { return !a.archived; }).map(function (a) { return { v: a.id, t: a.name }; });
     return '<label class="field"><span>Deposited to</span><select data-draft="accountId">' + optionList(accs, d.accountId) + "</select></label>" +
-      '<label class="field"><span>Source</span><input data-draft="source" value="' + esc(d.source) + '" placeholder="Salary, gift, refund…"></label>';
+      '<label class="field"><span>Source</span><input data-draft="source" value="' + esc(d.source) + '" placeholder="Salary, gift, refund…"></label>' +
+      '<label class="field"><span>Repeats</span><select data-draft="incomeEvery">' + optionList([{ v: "week", t: "Weekly" }, { v: "fortnight", t: "Fortnightly" }, { v: "month", t: "Monthly" }, { v: "year", t: "Yearly" }], d.incomeEvery, "One-off — no repeat") + "</select></label>" +
+      '<p class="tiny muted">A repeating income shows its next date on the log; if that lands on a weekend it rolls back to the previous weekday.</p>';
   }
+  var methodIcon = { cash: "cash", debit: "cheque", credit: "card" };
   var methodChips = ["cash", "debit", "credit"].map(function (m) {
-    return '<button type="button" class="chip" data-draft-set="method" data-val="' + m + '" aria-pressed="' + (d.method === m) + '">' + ({ cash: "Cash", debit: "Debit", credit: "Credit card" }[m]) + "</button>";
+    return '<button type="button" class="chip" data-draft-set="method" data-val="' + m + '" aria-pressed="' + (d.method === m) + '">' + ic(methodIcon[m], "sm") + ({ cash: "Cash", debit: "Debit", credit: "Credit card" }[m]) + "</button>";
   }).join("");
   var h = '<label class="field"><span>Paid with</span><div class="seg">' + methodChips + "</div></label>";
   if (d.method === "credit") {
     if (!store.cards.length) h += '<p class="small muted">No cards yet — add one in <b>Setup</b> to log credit purchases.</p>';
     else {
       h += '<label class="field"><span>Card</span><select data-draft="cardId">' + optionList(store.cards.map(function (c) { return { v: c.id, t: c.name }; }), d.cardId) + "</select></label>" +
-        '<label class="field"><span class="toggle" style="text-transform:none"><span>Meses sin intereses (MSI)</span><span class="switch"><input type="checkbox" data-draft-check="msiOn" ' + (d.msiOn ? "checked" : "") + '><span class="sl"></span></span></span></label>';
+        '<label class="toggle" style="text-transform:none;margin-bottom:10px"><span>Meses sin intereses (MSI)</span><span class="switch"><input type="checkbox" data-draft-check="msiOn" ' + (d.msiOn ? "checked" : "") + '><span class="sl"></span></span></label>';
       if (d.msiOn) h += '<label class="field"><span>Monthly installments</span><input type="number" min="2" max="48" step="1" data-draft="msiN" value="' + esc(d.msiN) + '"></label>' +
         '<p class="tiny muted">Logged once at full value under its category. Each statement shows one installment as the real cash outflow.</p>';
     }
@@ -755,7 +808,7 @@ function paymentFieldsHTML(d) {
 function renderLog() {
   var d = ui.draft;
   var kindChips = ["expense", "income"].map(function (k) {
-    return '<button type="button" class="chip" data-draft-set="kind" data-val="' + k + '" aria-pressed="' + (d.kind === k) + '">' + (k === "expense" ? "Expense" : "Income") + "</button>";
+    return '<button type="button" class="chip" data-draft-set="kind" data-val="' + k + '" aria-pressed="' + (d.kind === k) + '">' + ic(k === "expense" ? "arrowDown" : "arrowUp", "sm") + (k === "expense" ? "Expense" : "Income") + "</button>";
   }).join("");
   var form = '<div class="card"><h2>' + ic("sparkle") + ' Quick add</h2><form id="quickForm">' +
     '<div class="seg">' + kindChips + "</div>" +
@@ -772,6 +825,25 @@ function renderLog() {
     session = '<div class="card"><h2>' + ic("hourglass") + ' Added this session <span class="spacer"></span><span class="small muted">' + ui.backfillLog.length + "</span></h2><div class=\"list\">" + ui.backfillLog.slice().reverse().map(txnRow).join("") + "</div></div>";
   }
 
+  // recurring income — one row per series, showing the next upcoming date
+  var incSeries = {};
+  store.transactions.forEach(function (t) {
+    if (t.kind !== "income" || !t.recurrence || !t.recurrence.every) return;
+    var sid = t.recurrence.seriesId || t.id;
+    if (!incSeries[sid] || t.date > incSeries[sid].date) incSeries[sid] = t;
+  });
+  var incList = Object.keys(incSeries).map(function (k) { return incSeries[k]; })
+    .sort(function (a, b) { return nextRecurDate(a.date, a.recurrence.every) < nextRecurDate(b.date, b.recurrence.every) ? -1 : 1; });
+  var upcoming = incList.length ? '<div class="card"><h2>' + ic("arrowUp") + ' Recurring income</h2><div class="list">' +
+    incList.map(function (t) {
+      var nd = nextRecurDate(t.date, t.recurrence.every);
+      return '<div class="item">' + figog("coins") +
+        '<div class="body"><div class="t">' + esc(t.source || "Income") + '</div>' +
+        '<div class="s">' + esc(INCOME_RECUR[t.recurrence.every] + " · next " + dowDateLabel(nd) + " · into " + ((accById(t.accountId) || {}).name || "account")) + "</div></div>" +
+        '<span class="amt pos">+' + money(t.amount) + '</span>' +
+        '<span class="act"><button class="icon-btn" data-action="log-recur" data-id="' + t.id + '" title="Log this income now">' + ic("check", "sm") + "</button></span></div>";
+    }).join("") + '</div><p class="tiny muted" style="margin-top:8px">Tap ✓ to record the next payment — the date rolls back to the previous weekday if it lands on a weekend.</p></div>' : "";
+
   var month = ui.logMonth;
   var rows = store.transactions.filter(function (t) { return inMonth(t.date, month); }).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : (b._o || 0) - (a._o || 0); });
   var list = '<div class="card"><h2>' + ic("feather") + ' Entries <span class="spacer"></span>' +
@@ -779,7 +851,7 @@ function renderLog() {
     '<span class="small">' + esc(monthLabel(month)) + "</span>" +
     '<button class="icon-btn" data-action="log-month" data-dir="1">' + ic("chevR", "sm") + '</button></h2>' +
     (rows.length ? '<div class="list">' + rows.map(txnRow).join("") + "</div>" : '<div class="empty">Nothing logged for ' + esc(monthLabel(month)) + ".</div>") + "</div>";
-  return form + session + list;
+  return form + upcoming + session + list;
 }
 function txnRow(t) {
   var isExp = t.kind === "expense", key, title, sub;
@@ -791,7 +863,7 @@ function txnRow(t) {
     sub = catPathLabel(t.categoryId) + " · " + pmLabel + (isMSI(t) ? " · MSI×" + t.msi.installments : "") + (t.note ? " · " + t.note : "");
   } else {
     key = "coins"; title = t.source || "Income";
-    sub = "→ " + ((accById(t.accountId) || {}).name || "account");
+    sub = "→ " + ((accById(t.accountId) || {}).name || "account") + (t.recurrence && t.recurrence.every ? " · " + (INCOME_RECUR[t.recurrence.every] || "repeats") : "");
   }
   return '<div class="item">' + figog(key) +
     '<div class="body"><div class="t">' + esc(title) + '</div><div class="s">' + esc(dateLabel(t.date) + " · " + sub) + "</div></div>" +
@@ -803,7 +875,7 @@ function txnRow(t) {
 /* ---------- CARDS ---------- */
 function renderCards() {
   if (!store.cards.length) {
-    return '<div class="card"><h2>' + ic("card") + ' Credit cards</h2><div class="empty">No cards yet.<br>Add one to track cierre cycles, MSI and payments without double-counting.</div><button class="primary" data-action="add-card">' + ic("plus") + 'Add a card</button></div>';
+    return '<div class="card"><h2>' + ic("scroll") + ' Credits</h2><div class="empty">No credit cards yet.<br>Add one to track cierre cycles, MSI and payments without double-counting.</div><button class="primary" data-action="add-card">' + ic("plus") + 'Add a card</button></div>';
   }
   return store.cards.map(function (card) {
     var open = ui.openCard === card.id;
@@ -811,7 +883,7 @@ function renderCards() {
     var dueNow = cardDueNow(card);
     var openStmt = stmts.filter(function (s) { return s.isOpen; })[0] || cardStatement(card, homeCycleKey(todayStr(), card.cutoverDay));
 
-    var h = '<div class="card"><h2>' + ic("card") + " " + esc(card.name) + '<span class="spacer"></span><button class="icon-btn" data-action="edit-card" data-id="' + card.id + '">' + ic("pencil", "sm") + "</button></h2>" +
+    var h = '<div class="card"><h2>' + ic("scroll") + " " + esc(card.name) + '<span class="spacer"></span><button class="icon-btn" data-action="edit-card" data-id="' + card.id + '">' + ic("pencil", "sm") + "</button></h2>" +
       '<p class="small muted">Cierre day ' + card.cutoverDay + ' · pays day ' + card.dueDay + " of the " + ["same month", "following month", "second month"][card.dueMonthOffset == null ? 1 : card.dueMonthOffset] + " after cierre</p>";
 
     if (dueNow.length) {
@@ -970,10 +1042,13 @@ function renderAccounts() {
     '<div class="stat"><div class="k">Net worth</div><div class="v">' + money(round2(liquid + savings - cardDebt)) + "</div></div></div></div>";
   var list = '<div class="card"><h2>Accounts <span class="spacer"></span><button class="chip" data-action="add-account">' + ic("plus", "sm") + 'Add</button></h2><div class="list">' +
     accs.map(function (a) {
-      return '<div class="item">' + figog(a.icon) + '<div class="body"><div class="t">' + esc(a.name) + ' <span class="badge">' + a.kind + '</span></div><div class="s">opened ' + esc(dateLabel(a.openingDate)) + " at " + money(a.openingBalance) + "</div></div>" +
-        '<span class="amt">' + money(accountBalance(a)) + '</span><span class="act"><button class="icon-btn" data-action="adjust-account" data-id="' + a.id + '">' + ic("scales", "sm") + "</button>" +
+      var isDef = store.settings.defaultAccountId === a.id;
+      return '<div class="item">' + figog(a.icon) + '<div class="body"><div class="t">' + esc(a.name) + ' <span class="badge">' + a.kind + '</span></div><div class="s">' + (isDef ? "default account · " : "") + "opened " + esc(dateLabel(a.openingDate)) + " at " + money(a.openingBalance) + "</div></div>" +
+        '<span class="amt">' + money(accountBalance(a)) + '</span><span class="act">' +
+        '<button class="icon-btn" data-action="set-default-account" data-id="' + a.id + '" aria-pressed="' + isDef + '" title="' + (isDef ? "Remove as default account" : "Set as default “From account”") + '">' + ic("star", "sm") + "</button>" +
+        '<button class="icon-btn" data-action="adjust-account" data-id="' + a.id + '">' + ic("scales", "sm") + "</button>" +
         '<button class="icon-btn" data-action="edit-account" data-id="' + a.id + '">' + ic("pencil", "sm") + "</button></span></div>";
-    }).join("") + '</div><p class="tiny muted" style="margin-top:8px">Use the scales to record a manual correction when the real balance drifts.</p></div>';
+    }).join("") + '</div><p class="tiny muted" style="margin-top:8px">The star sets the account pre-selected in “From account” (for expenses and card payments). Use the scales to record a manual correction when the real balance drifts.</p></div>';
   var adj = store.adjustments.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 8);
   var adjList = adj.length ? '<div class="card"><h2>Recent adjustments</h2><div class="list">' + adj.map(function (a) {
     return '<div class="item">' + figog("scales") + '<div class="body"><div class="t">' + esc((accById(a.accountId) || {}).name || "?") + '</div><div class="s">' + esc(dateLabel(a.date) + (a.note ? " · " + a.note : "")) + "</div></div>" +
@@ -1001,7 +1076,7 @@ function renderSetup() {
     (tops.length ? tops.map(function (c) { return nodeHTML(c, 0); }).join("") : '<div class="empty">No categories.</div>') +
     '<p class="tiny muted" style="margin-top:8px">Rename or move any level anytime — past charts regroup automatically.</p></div>';
 
-  var cards = '<div class="card"><h2>' + ic("card") + ' Cards <span class="spacer"></span><button class="chip" data-action="add-card">' + ic("plus", "sm") + 'Add</button></h2>' +
+  var cards = '<div class="card"><h2>' + ic("scroll") + ' Credits <span class="spacer"></span><button class="chip" data-action="add-card">' + ic("plus", "sm") + 'Add</button></h2>' +
     (store.cards.length ? '<div class="list">' + store.cards.map(function (c) {
       return '<div class="item">' + figog(c.icon) + '<div class="body"><div class="t">' + esc(c.name) + '</div><div class="s">cierre ' + c.cutoverDay + " · pays " + c.dueDay + " (" + ["same mo", "+1 mo", "+2 mo"][c.dueMonthOffset == null ? 1 : c.dueMonthOffset] + ")</div></div>" +
         '<span class="act"><button class="icon-btn" data-action="edit-card" data-id="' + c.id + '">' + ic("pencil", "sm") + '</button><button class="icon-btn" data-action="del-card" data-id="' + c.id + '">' + ic("trash", "sm") + "</button></span></div>";
@@ -1042,7 +1117,8 @@ function editTxnModal(id) {
     method: t.payment ? t.payment.method : "cash",
     accountId: t.kind === "income" ? t.accountId : (t.payment ? t.payment.accountId : ""),
     cardId: t.payment ? t.payment.cardId : (store.cards[0] || {}).id || "",
-    msiOn: isMSI(t), msiN: isMSI(t) ? t.msi.installments : 6, source: t.source || ""
+    msiOn: isMSI(t), msiN: isMSI(t) ? t.msi.installments : 6, source: t.source || "",
+    incomeEvery: (t.recurrence && t.recurrence.every) || ""
   };
   var ch = catChain(t.categoryId);
   if (ch[0]) d.l0 = ch[0].id; if (ch[1]) d.l1 = ch[1].id; if (ch[2]) d.l2 = ch[2].id;
@@ -1051,7 +1127,7 @@ function editTxnModal(id) {
 }
 function renderEditModal() {
   var d = ui._editDraft;
-  var kindChips = ["expense", "income"].map(function (k) { return '<button type="button" class="chip" data-edit-set="kind" data-val="' + k + '" aria-pressed="' + (d.kind === k) + '">' + (k === "expense" ? "Expense" : "Income") + "</button>"; }).join("");
+  var kindChips = ["expense", "income"].map(function (k) { return '<button type="button" class="chip" data-edit-set="kind" data-val="' + k + '" aria-pressed="' + (d.kind === k) + '">' + ic(k === "expense" ? "arrowDown" : "arrowUp", "sm") + (k === "expense" ? "Expense" : "Income") + "</button>"; }).join("");
   openModal('<h3>Edit entry</h3><form id="editForm"><div class="seg">' + kindChips + "</div>" +
     '<label class="field"><span>Amount</span><input class="amount-input" data-edit="amount" inputmode="decimal" value="' + esc(d.amount) + '"></label>' +
     (d.kind === "expense" ? editCategoryPicker(d) : "") + editPaymentFields(d) +
@@ -1063,17 +1139,19 @@ function renderEditModal() {
 function editCategoryPicker(d) {
   var tops = catChildren(null), l1s = d.l0 ? catChildren(d.l0) : [], l2s = d.l1 ? catChildren(d.l1) : [];
   function opts(list) { return list.map(function (c) { return { v: c.id, t: c.name }; }); }
-  var h = '<label class="field"><span>Category</span><select data-edit="l0">' + optionList(opts(tops), d.l0, "Choose…") + "</select></label>";
-  if (d.l0) h += '<label class="field"><span>Subcategory</span><select data-edit="l1">' + optionList(opts(l1s), d.l1, "—") + "</select></label>";
-  if (d.l1) h += '<label class="field"><span>Sub-subcategory</span><select data-edit="l2">' + optionList(opts(l2s), d.l2, "—") + "</select></label>";
+  var h = '<label class="field"><span>Type</span><select data-edit="l0">' + optionList(opts(tops), d.l0, "Choose…") + "</select></label>";
+  if (d.l0) h += '<label class="field"><span>Use</span><select data-edit="l1">' + optionList(opts(l1s), d.l1, "—") + "</select></label>";
+  if (d.l1) h += '<label class="field"><span>Detail</span><select data-edit="l2">' + optionList(opts(l2s), d.l2, "—") + "</select></label>";
   return h;
 }
 function editPaymentFields(d) {
   if (d.kind === "income") {
     return '<label class="field"><span>Deposited to</span><select data-edit="accountId">' + optionList(store.accounts.filter(function (a) { return !a.archived; }).map(function (a) { return { v: a.id, t: a.name }; }), d.accountId) + "</select></label>" +
-      '<label class="field"><span>Source</span><input data-edit="source" value="' + esc(d.source) + '"></label>';
+      '<label class="field"><span>Source</span><input data-edit="source" value="' + esc(d.source) + '"></label>' +
+      '<label class="field"><span>Repeats</span><select data-edit="incomeEvery">' + optionList([{ v: "week", t: "Weekly" }, { v: "fortnight", t: "Fortnightly" }, { v: "month", t: "Monthly" }, { v: "year", t: "Yearly" }], d.incomeEvery, "One-off — no repeat") + "</select></label>";
   }
-  var methods = ["cash", "debit", "credit"].map(function (m) { return '<button type="button" class="chip" data-edit-set="method" data-val="' + m + '" aria-pressed="' + (d.method === m) + '">' + m + "</button>"; }).join("");
+  var mIcon = { cash: "cash", debit: "cheque", credit: "card" }, mLabel = { cash: "Cash", debit: "Debit", credit: "Credit card" };
+  var methods = ["cash", "debit", "credit"].map(function (m) { return '<button type="button" class="chip" data-edit-set="method" data-val="' + m + '" aria-pressed="' + (d.method === m) + '">' + ic(mIcon[m], "sm") + mLabel[m] + "</button>"; }).join("");
   var h = '<label class="field"><span>Paid with</span><div class="seg">' + methods + "</div></label>";
   if (d.method === "credit" && store.cards.length) {
     h += '<label class="field"><span>Card</span><select data-edit="cardId">' + optionList(store.cards.map(function (c) { return { v: c.id, t: c.name }; }), d.cardId) + "</select></label>" +
@@ -1131,10 +1209,11 @@ function payCardModal(cardId, cycleKey) {
   var card = cardById(cardId), s = cardStatement(card, cycleKey);
   var accs = store.accounts.filter(function (a) { return !a.archived && a.kind !== "savings"; });
   if (!accs.length) accs = store.accounts.filter(function (a) { return !a.archived; });
+  var payDefault = accs.some(function (a) { return a.id === store.settings.defaultAccountId; }) ? store.settings.defaultAccountId : (accs[0] || {}).id;
   openModal('<h3>Pay ' + esc(card.name) + '</h3><p class="small muted">Statement ' + esc(dateLabel(cycleKey)) + " · remaining <b>" + money(s.rawRemaining) + "</b> · due " + esc(dateLabel(s.dueDate)) + "</p>" +
     '<form id="payForm" data-card="' + cardId + '" data-cycle="' + cycleKey + '">' +
     '<label class="field"><span>Amount</span><input type="number" step="0.01" data-f="amount" value="' + s.rawRemaining + '"></label>' +
-    '<label class="field"><span>From account</span><select data-f="fromAccountId">' + optionList(accs.map(function (a) { return { v: a.id, t: a.name + " (" + money(accountBalance(a)) + ")" }; }), (accs[0] || {}).id) + "</select></label>" +
+    '<label class="field"><span>From account</span><select data-f="fromAccountId">' + optionList(accs.map(function (a) { return { v: a.id, t: a.name + " (" + money(accountBalance(a)) + ")" }; }), payDefault) + "</select></label>" +
     '<label class="field"><span>Date</span><input type="date" data-f="date" value="' + todayStr() + '"></label>' +
     '<p class="tiny muted">Moves money out of the account. Not counted again as spending — the purchases already were.</p>' +
     '<button class="primary" type="submit">' + ic("check") + "Register payment</button></form>");
@@ -1241,6 +1320,22 @@ document.body.addEventListener("click", function (e) {
   if (a === "chart-crumb") { var i = +t.dataset.i; ui.chartPath = i < 0 ? [] : ui.chartPath.slice(0, i + 1); render(); return; }
 
   if (a === "edit-txn") { editTxnModal(t.dataset.id); return; }
+  if (a === "log-recur") {
+    var src = store.transactions.find(function (x) { return x.id === t.dataset.id; });
+    if (src && src.recurrence && src.recurrence.every) {
+      if (!src.recurrence.seriesId) src.recurrence.seriesId = uid();
+      var nd = nextRecurDate(src.date, src.recurrence.every);
+      store.transactions.push({
+        id: uid(), kind: "income", amount: src.amount, date: nd, note: "", _o: Date.now(),
+        accountId: src.accountId, source: src.source,
+        recurrence: { every: src.recurrence.every, seriesId: src.recurrence.seriesId }
+      });
+      saveStore();
+      var rb = t.getBoundingClientRect(); sparkle(rb.left, rb.top);
+      render();
+    }
+    return;
+  }
   if (a === "del-txn") {
     if (confirm("Delete this entry?")) {
       store.transactions = store.transactions.filter(function (x) { return x.id !== t.dataset.id; });
@@ -1270,6 +1365,10 @@ document.body.addEventListener("click", function (e) {
   if (a === "edit-account") { accountModal(t.dataset.id); return; }
   if (a === "archive-account") { var acc = accById(t.dataset.id); if (acc) { acc.archived = true; saveStore(); closeModal(); render(); } return; }
   if (a === "adjust-account") { adjustModal(t.dataset.id); return; }
+  if (a === "set-default-account") {
+    store.settings.defaultAccountId = store.settings.defaultAccountId === t.dataset.id ? "" : t.dataset.id;
+    saveStore(); render(); return;
+  }
   if (a === "del-adjustment") { if (confirm("Remove this adjustment?")) { store.adjustments = store.adjustments.filter(function (x) { return x.id !== t.dataset.id; }); saveStore(); render(); } return; }
 
   if (a === "add-cat") { catModal(null, t.dataset.parent || null); return; }
@@ -1362,17 +1461,17 @@ document.body.addEventListener("change", function (e) {
   if (el.closest("#quickForm") && el.dataset.draft) {
     var k = el.dataset.draft, v = el.value;
     if (k === "l0") {
-      if (v === "__new") { var n = prompt("New top-level category name:"); if (n) { var c = { id: uid(), name: n.trim(), parentId: null, icon: "leaf" }; store.categories.push(c); saveStore(); ui.draft.l0 = c.id; } else ui.draft.l0 = ""; ui.draft.l1 = ""; ui.draft.l2 = ""; }
+      if (v === "__new") { var n = prompt("New type name:"); if (n) { var c = { id: uid(), name: n.trim(), parentId: null, icon: "leaf" }; store.categories.push(c); saveStore(); ui.draft.l0 = c.id; } else ui.draft.l0 = ""; ui.draft.l1 = ""; ui.draft.l2 = ""; }
       else { ui.draft.l0 = v; ui.draft.l1 = ""; ui.draft.l2 = ""; }
       render(); return;
     }
     if (k === "l1") {
-      if (v === "__new") { var n1 = prompt("New subcategory name:"); if (n1) { var c1 = { id: uid(), name: n1.trim(), parentId: ui.draft.l0, icon: "seedling" }; store.categories.push(c1); saveStore(); ui.draft.l1 = c1.id; } else ui.draft.l1 = ""; ui.draft.l2 = ""; }
+      if (v === "__new") { var n1 = prompt("New use name:"); if (n1) { var c1 = { id: uid(), name: n1.trim(), parentId: ui.draft.l0, icon: "seedling" }; store.categories.push(c1); saveStore(); ui.draft.l1 = c1.id; } else ui.draft.l1 = ""; ui.draft.l2 = ""; }
       else { ui.draft.l1 = v; ui.draft.l2 = ""; }
       render(); return;
     }
     if (k === "l2") {
-      if (v === "__new") { var n2 = prompt("New sub-subcategory name:"); if (n2) { var c2 = { id: uid(), name: n2.trim(), parentId: ui.draft.l1, icon: "sparkle" }; store.categories.push(c2); saveStore(); ui.draft.l2 = c2.id; } else ui.draft.l2 = ""; }
+      if (v === "__new") { var n2 = prompt("New detail name:"); if (n2) { var c2 = { id: uid(), name: n2.trim(), parentId: ui.draft.l1, icon: "sparkle" }; store.categories.push(c2); saveStore(); ui.draft.l2 = c2.id; } else ui.draft.l2 = ""; }
       else ui.draft.l2 = v;
       render(); return;
     }
@@ -1485,7 +1584,10 @@ function submitQuickAdd() {
       txn.payment = { method: "credit", cardId: d.cardId || store.cards[0].id };
       txn.msi = d.msiOn ? { installments: clampInt(d.msiN, 2, 48, 6) } : false;
     } else { txn.payment = { method: d.method, accountId: d.accountId || firstAccountId(d.method) }; txn.msi = false; }
-  } else { txn.accountId = d.accountId || firstAccountId("debit"); txn.source = (d.source || "").trim(); }
+  } else {
+    txn.accountId = d.accountId || firstAccountId("debit"); txn.source = (d.source || "").trim();
+    if (d.incomeEvery && INCOME_RECUR[d.incomeEvery]) txn.recurrence = { every: d.incomeEvery, seriesId: uid() };
+  }
   store.transactions.push(txn); saveStore();
   if (ui.backfill) ui.backfillLog.push(txn);
   var keep = { date: ui.backfill ? d.date : todayStr(), method: d.method, cardId: d.cardId, accountId: d.accountId, kind: d.kind };
@@ -1514,6 +1616,8 @@ function submitEdit() {
   } else {
     delete t.payment; t.msi = false;
     t.accountId = d.accountId || firstAccountId("debit"); t.source = (d.source || "").trim(); delete t.categoryId;
+    if (d.incomeEvery && INCOME_RECUR[d.incomeEvery]) t.recurrence = { every: d.incomeEvery, seriesId: (t.recurrence && t.recurrence.seriesId) || uid() };
+    else delete t.recurrence;
   }
   saveStore(); closeModal(); render();
 }
@@ -1551,6 +1655,7 @@ function handleImport(file) {
         store = data;
         ["accounts", "cards", "categories", "transactions", "cardPayments", "adjustments", "statementOverrides", "buckets", "objectives", "contributions"].forEach(function (k) { if (!Array.isArray(store[k])) store[k] = []; });
         if (!store.settings) store.settings = defaultStore().settings;
+        if (store.settings.defaultAccountId == null) store.settings.defaultAccountId = "";
         store.categories.forEach(function (c) { c.icon = iconKey(c.icon); });
         store.accounts.forEach(function (a) { a.icon = iconKey(a.icon); });
         store.cards.forEach(function (c) { c.icon = iconKey(c.icon); if (c.dueMonthOffset == null) c.dueMonthOffset = 1; });
