@@ -1,17 +1,17 @@
 # Grimoire — local finance tracker
 
-A personal, no-paywall expense & savings companion. **Phase 1 (MVP)** of
+A personal, no-paywall expense & savings companion. **Phases 1 + 2** of
 `PRD-expense-tracker.md`. One self-contained file, no accounts, no server, no
 tracking — your data never leaves your device.
 
 ## Opening it
 
 - **Desktop:** double-click `index.html`.
-- **Phone (recommended):** put this folder somewhere the phone can reach it, or
-  serve it (see below), open `index.html` in the browser, then **Share → Add to
-  Home Screen**. It then opens full-screen like an app and works offline.
+- **Phone (recommended):** serve the folder (below), open it in the browser, then
+  **Share → Add to Home Screen**. It then opens full-screen like an app and works
+  offline.
 
-### Serving it (needed for "install" + offline caching)
+### Serving it (needed for install + offline caching)
 
 From this folder:
 
@@ -23,53 +23,77 @@ Then open `http://localhost:8000` (or `http://<your-computer-ip>:8000` from the
 phone on the same Wi-Fi). Opening straight from `file://` also works — you just
 don't get the installable/offline service worker.
 
+## Navigation
+
+Tap the **☰ button, top-left** to slide out the page menu. Tap a page, the dimmed
+area, the button again, or press Esc to close it. Pages: **Log, Cards, Charts,
+Objectives, Accounts, Setup**.
+
 ## The one rule: money is never counted twice
 
-The app keeps **two** separate spending numbers:
-
-| Number | What it means |
+| Number | Meaning |
 |---|---|
-| **Spending (by category)** | Every purchase counted at full value on the day it happened, under its category — no matter how it was paid. Answers *"what did I spend on Food this month?"* |
+| **Spending (by category)** | Every purchase at full value on the day it happened, under its category — regardless of how it was paid. |
 | **Cash out** | Money that actually left an account = income − (cash/debit expenses + credit-card payments). |
 
 A **credit-card purchase moves no account balance** until you pay the statement.
-Registering a card payment is a *settlement* of purchases already counted — it is
-never added again as spending. Account balances reconcile off "Cash out" only.
+Registering a card payment settles purchases already counted — it is never added
+again as spending. Balances reconcile off "Cash out" only.
 
-### Credit-card cierre & MSI
+### Credit cards — cierre, due date, MSI
 
-- Each card has a **cierre (cutover) day** and a **payment due day**.
-- A purchase dated **before** the cierre day lands in the statement closing this
-  month; **on/after** the cierre day it lands in next month's statement.
-- **MSI (meses sin intereses):** logged once at full value under its true
-  category on the purchase date. Each future statement then shows just that
-  month's installment as the real cash outflow. Example: $12,000 × 6 bought
-  Aug 3 → the category chart shows the whole $12,000 in August; the card shows
-  $2,000 in each of the next 6 statements.
+- Each card has a **cierre (cutover) day**, a **due day**, and a **due month**:
+  *same month / month after / two months after* the cierre. Default is *month
+  after* (cierre Aug 15 → due Sep 5).
+- The Cards page separates **"Statement to pay"** (a closed statement still
+  owing, shown with its due date and an overdue flag) from **"Current period"**
+  (charges still accumulating toward the next cierre). Looking at the wrong one
+  is what makes a due date look "a month off".
+- **Per-statement override:** the pencil on any statement lets you set that one
+  statement's due date by hand or mark it *settled* (to absorb a small
+  remainder). "Reset to automatic" clears the override and the app recalculates
+  from the card's rules.
+- **MSI (meses sin intereses):** logged once at full value under its category on
+  the purchase date; each following statement shows one installment as the real
+  cash outflow. $12,000 × 6 bought Aug 3 → whole $12,000 in August's category
+  chart; $2,000 in each of the next 6 statements.
 
-## Tabs
+## Charts
 
-- **Log** — quick-add expenses/income; 3-level category picker; *Backfill mode*
-  keeps the date sticky so you can enter a whole past month fast. Any past entry
-  stays editable forever.
-- **Cards** — each card's current and past statements (purchases + MSI
-  installments), due dates, and *Register payment*.
-- **Charts** — Spending vs Cash out vs Income for a month, change vs last month,
-  category breakdown (tap a bar to see subcategories), 6-month trend.
-- **Accounts** — cash / debit / savings balances, net worth, and manual `±`
-  adjustments for when the real balance drifts from what's logged.
-- **Setup** — seasonal palette (Spring/Summer/Autumn/Winter, manual or
-  auto-by-date), category tree (rename / re-parent anytime — old charts never
-  break), cards, and **Export / Import JSON**.
+Spending vs Cash out vs Income vs Net cash for a month, change vs last month,
+and a **drill-down** category breakdown: tap a bar to go into its subcategories,
+then its sub-subcategories; the breadcrumb walks back out. Plus a 6-month trend.
+
+## Objectives & buckets
+
+- **Savings goal:** target amount + date. Shows the required monthly rate, months
+  left, and flags when the rate is above your recent monthly surplus.
+- **Recurring reserve:** weekly / monthly / quarterly / yearly / one-time /
+  *X times per month* / *X times per year*, with an amount — the app converts it
+  to a monthly reserved figure.
+- **Buckets** group objectives (Travel, Home, Treats…). Add contributions with
+  the **＋** on an objective to track progress; contributions are progress
+  tracking only and do **not** move account balances.
+- **Priority** (1–5) orders objectives within a bucket.
+
+## Accounts
+
+Cash / debit / savings balances, net worth, and manual **⚖ adjustments** for when
+the real balance drifts from what's logged.
+
+## Icons & palette
+
+All icons are a hand-drawn line set — pick one per category, account, card,
+bucket and objective from the icon grid. Setup also has the four seasonal
+palettes (Spring / Summer / Autumn / Winter), manual or auto-by-date.
 
 ## Backups
 
-All data lives in this browser's `localStorage`. It survives restarts but is
-erased if you clear site data or switch browsers. **Setup → Export JSON**
-regularly. Import offers to replace everything from a backup file.
+All data lives in this browser's `localStorage`. **Setup → Export JSON**
+regularly. Import replaces everything from a backup file. Old (Phase 1) backups
+import fine — emoji icons are converted automatically.
 
-## Not in this build (later phases)
+## Not built yet (later phases)
 
-Savings objectives, recurrence rules and buckets; the priority-weighted raffle;
-recurring-subscription templates; deeper chart drill-down; custom icon sets
-beyond the emoji picker; shared/multi-user access.
+The priority-weighted **raffle** and its customizable 5-level priority labels;
+recurring-subscription templates; shared / multi-user access.
